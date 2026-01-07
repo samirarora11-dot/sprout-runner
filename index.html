@@ -2,21 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sprout Runner (Platformer Demo)</title>
   <style>
     :root { color-scheme: dark; }
     html, body { height: 100%; margin: 0; background:#0b1020; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-    #wrap { display:flex; flex-direction:column; height:100%; }
+    html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* stop scroll / bounce */
+  background: #0b1020;
+}
+
+#wrap {
+  height: 100vh;
+  height: 100dvh; /* newer iOS uses dynamic viewport */
+  display: flex;
+  flex-direction: column;
+}
     #hud {
       display:flex; gap:16px; align-items:center; justify-content:space-between;
       padding:10px 12px; background:rgba(0,0,0,.35); border-bottom:1px solid rgba(255,255,255,.08);
       color:#e8ecff; font-size:14px;
       backdrop-filter: blur(6px);
+padding-top: calc(10px + env(safe-area-inset-top));
+  padding-left: calc(12px + env(safe-area-inset-left));
+  padding-right: calc(12px + env(safe-area-inset-right));
     }
     #hud b { font-weight:700; }
     #tips { opacity:.8; font-size:12px; }
-    canvas { flex:1; display:block; width:100%; height:auto; max-height: calc(100vh - 54px); }
+   canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  max-height: none;
+}
     #overlay {
       position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.55);
       color:#fff; text-align:center; padding:24px;
@@ -37,6 +58,9 @@
       position:fixed; left:0; right:0; bottom:0; padding:12px;
       display:flex; justify-content:space-between; gap:12px;
       pointer-events:none;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-left: calc(12px + env(safe-area-inset-left));
+  padding-right: calc(12px + env(safe-area-inset-right));
     }
     .pad { display:flex; gap:10px; pointer-events:none; }
     .btn {
@@ -105,21 +129,22 @@
   const ctx = canvas.getContext("2d");
 
   // HiDPI scaling
-  function resize() {
-    const maxW = window.innerWidth;
-    const maxH = window.innerHeight - 54;
-    const aspect = 960/540;
-    let w = maxW, h = Math.floor(w/aspect);
-    if (h > maxH) { h = maxH; w = Math.floor(h*aspect); }
-    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    canvas.style.width = w + "px";
-    canvas.style.height = h + "px";
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
-    view.w = w; view.h = h;
-  }
-  window.addEventListener("resize", resize);
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+
+  // Draw in CSS pixels
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Your camera/view uses CSS pixel units
+  view.w = rect.width;
+  view.h = rect.height;
+}
+  window.addEventListener("resize", () => requestAnimationFrame(resize));
+window.addEventListener("orientationchange", () => setTimeout(resize, 250));
 
   // ---------- HUD ----------
   const $score = document.getElementById("score");
