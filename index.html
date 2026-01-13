@@ -2,65 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sprout Runner (Platformer Demo)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sprout Runner Ultra</title>
+
+  <!-- iPhone / PWA-ish -->
+  <meta name="theme-color" content="#0b1020">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sprout Runner">
+
   <style>
     :root { color-scheme: dark; }
     html, body { height: 100%; margin: 0; background:#0b1020; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-    html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden; /* stop scroll / bounce */
-  background: #0b1020;
-}
+    html, body { overflow: hidden; overscroll-behavior: none; }
+    * { -webkit-tap-highlight-color: transparent; }
 
-#wrap {
-  height: 100vh;
-  height: 100dvh; /* newer iOS uses dynamic viewport */
-  display: flex;
-  flex-direction: column;
-}
+    body, canvas {
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #wrap {
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
     #hud {
-      display:flex; gap:16px; align-items:center; justify-content:space-between;
+      display:flex; gap:14px; align-items:center; justify-content:space-between;
       padding:10px 12px; background:rgba(0,0,0,.35); border-bottom:1px solid rgba(255,255,255,.08);
       color:#e8ecff; font-size:14px;
       backdrop-filter: blur(6px);
-padding-top: calc(10px + env(safe-area-inset-top));
-  padding-left: calc(12px + env(safe-area-inset-left));
-  padding-right: calc(12px + env(safe-area-inset-right));
+      padding-top: calc(10px + env(safe-area-inset-top));
+      padding-left: calc(12px + env(safe-area-inset-left));
+      padding-right: calc(12px + env(safe-area-inset-right));
+      flex: 0 0 auto;
     }
-    #hud b { font-weight:700; }
-    #tips { opacity:.8; font-size:12px; }
-   canvas {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  display: block;
-  max-height: none;
-}
+    #hud b { font-weight:800; }
+    #tips { opacity:.8; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52vw; }
+    #hudRight { display:flex; gap:10px; align-items:center; }
+    #hudRight button {
+      appearance:none; border:1px solid rgba(255,255,255,.16); border-radius:10px;
+      padding:7px 10px; background:rgba(255,255,255,.06); color:#e8ecff; font-weight:800;
+      cursor:pointer;
+      touch-action: manipulation;
+    }
+    #hudRight button:active { transform: translateY(1px); }
+
+    canvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+      max-height: none;
+    }
+
     #overlay {
-      position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.55);
+      position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.62);
       color:#fff; text-align:center; padding:24px;
     }
     #overlay .card {
-      max-width:520px; background:rgba(15,18,35,.92); border:1px solid rgba(255,255,255,.12);
-      border-radius:16px; padding:18px 18px 14px; box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      width:min(640px, 94vw);
+      background:rgba(15,18,35,.94); border:1px solid rgba(255,255,255,.12);
+      border-radius:18px; padding:18px 18px 14px; box-shadow: 0 18px 60px rgba(0,0,0,.55);
     }
-    #overlay h1 { margin:0 0 8px; font-size:20px; }
-    #overlay p { margin:0 0 12px; opacity:.9; line-height:1.4; }
-    #overlay button {
-      appearance:none; border:0; border-radius:12px; padding:10px 12px; cursor:pointer;
-      background:#6ee7ff; color:#061018; font-weight:700;
+    #overlay h1 { margin:0 0 8px; font-size:22px; letter-spacing:.2px; }
+    #overlay p { margin:0 0 12px; opacity:.92; line-height:1.45; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+    #overlay button, #overlay select, #overlay input[type="checkbox"] {
+      appearance:none; border:0; border-radius:12px; padding:10px 12px;
+      background:#6ee7ff; color:#061018; font-weight:900; cursor:pointer;
+      touch-action: manipulation;
     }
+    #overlay select {
+      background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+      color:#e8ecff; font-weight:800;
+    }
+    #overlay button.secondary{
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      color:#e8ecff;
+    }
+    .muted { opacity:.72; font-size:13px; }
+    .pill {
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      padding:8px 10px; border-radius:999px;
+      color:#e8ecff; font-weight:800;
+    }
+    .pill input { width:18px; height:18px; }
 
     /* Touch controls */
     #touch {
       position:fixed; left:0; right:0; bottom:0; padding:12px;
       display:flex; justify-content:space-between; gap:12px;
       pointer-events:none;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
-  padding-left: calc(12px + env(safe-area-inset-left));
-  padding-right: calc(12px + env(safe-area-inset-right));
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      padding-left: calc(12px + env(safe-area-inset-left));
+      padding-right: calc(12px + env(safe-area-inset-right));
     }
     .pad { display:flex; gap:10px; pointer-events:none; }
     .btn {
@@ -71,25 +114,31 @@ padding-top: calc(10px + env(safe-area-inset-top));
       display:grid; place-items:center;
       user-select:none; -webkit-user-select:none;
       pointer-events:auto;
-      touch-action:none;
+      touch-action: manipulation;
       color:#e8ecff;
-      font-weight:800;
+      font-weight:1000;
+      font-size:18px;
     }
     .btn:active { transform: translateY(1px); background:rgba(255,255,255,.14); }
+
     @media (hover:hover) and (pointer:fine) {
       #touch { display:none; }
     }
+    @media (hover:none) and (pointer:coarse) {
+      .btn { width:64px; height:64px; border-radius:18px; font-size:20px; }
+    }
   </style>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b1020">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
+
 <body>
 <div id="wrap">
   <div id="hud">
     <div>
-      <b>Sprout Runner</b>
+      <b>Sprout Runner Ultra</b>
+      <span style="opacity:.75">·</span>
+      <span>Level: <span id="lvl">1</span></span>
+      <span style="opacity:.75">·</span>
+      <span>Time: <span id="time">0.0</span>s</span>
       <span style="opacity:.75">·</span>
       <span>Score: <span id="score">0</span></span>
       <span style="opacity:.75">·</span>
@@ -98,17 +147,45 @@ padding-top: calc(10px + env(safe-area-inset-top));
       <span>Lives: <span id="lives">3</span></span>
       <span style="opacity:.75">·</span>
       <span>Power: <span id="power">Small</span></span>
+      <span style="opacity:.75">·</span>
+      <span>Dash: <span id="dash">Ready</span></span>
+      <span style="opacity:.75">·</span>
+      <span>DJ: <span id="dj">Off</span></span>
+      <span style="opacity:.75">·</span>
+      <span>Shield: <span id="shield">0</span></span>
     </div>
-    <div id="tips">Move: ← → / A D · Jump: Space / W / ↑ · Restart: R</div>
+
+    <div id="hudRight">
+      <div id="tips">Move: ← → / A D · Jump: Space/W/↑ · Dash: Shift/X · Restart: R · Pause: P</div>
+      <button id="muteBtn" title="Toggle sound">🔊</button>
+    </div>
   </div>
   <canvas id="c" width="960" height="540"></canvas>
 </div>
 
 <div id="overlay">
   <div class="card">
-    <h1 id="ovTitle">Game Over</h1>
-    <p id="ovText">Press <b>R</b> to restart.</p>
-    <button id="ovBtn">Restart</button>
+    <h1 id="ovTitle">Sprout Runner Ultra</h1>
+    <p id="ovText"><b>Made By Kairav</b><br/><span class="muted">Collect coins, stomp blobs, avoid spikes, reach the goal!</span></p>
+
+    <div class="row" id="ovRow1">
+      <label class="muted" style="align-self:center;">Start Level</label>
+      <select id="levelSelect"></select>
+    </div>
+
+    <div class="row" id="ovRow2">
+      <span class="pill"><input id="hardToggle" type="checkbox"> Hard Mode</span>
+      <span class="pill"><input id="soundToggle" type="checkbox" checked> Sound</span>
+    </div>
+
+    <div class="row" id="ovRow3">
+      <button id="ovBtn">Start</button>
+      <button class="secondary" id="ovBtn2">How to Play</button>
+    </div>
+
+    <p class="muted" id="ovFooter" style="margin-top:12px;">
+      New: Jump Pads · Keys/Doors · Shop · Boss · Medals · Save Progress
+    </p>
   </div>
 </div>
 
@@ -118,145 +195,595 @@ padding-top: calc(10px + env(safe-area-inset-top));
     <div class="btn" id="right">▶</div>
   </div>
   <div class="pad">
+    <div class="btn" id="dashBtn">⟲</div>
     <div class="btn" id="jump">⤒</div>
   </div>
 </div>
 
 <script>
 (() => {
+  // ============================================================
+  // iPhone stability: reset stuck inputs when app backgrounded
+  // ============================================================
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      keys.clear();
+      touchState.left = touchState.right = touchState.jump = touchState.dash = false;
+    }
+  });
+
   // ---------- Canvas ----------
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
 
-  // HiDPI scaling
-function resize() {
-  const rect = canvas.getBoundingClientRect();
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-
-  canvas.width = Math.floor(rect.width * dpr);
-  canvas.height = Math.floor(rect.height * dpr);
-
-  // Draw in CSS pixels
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  // Your camera/view uses CSS pixel units
-  view.w = rect.width;
-  view.h = rect.height;
-}
+  const view = { x: 0, y: 0, w: 960, h: 540 };
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    view.w = rect.width;
+    view.h = rect.height;
+  }
   window.addEventListener("resize", () => requestAnimationFrame(resize));
-window.addEventListener("orientationchange", () => setTimeout(resize, 250));
+  window.addEventListener("orientationchange", () => setTimeout(() => { resize(); }, 250));
 
   // ---------- HUD ----------
+  const $lvl   = document.getElementById("lvl");
+  const $time  = document.getElementById("time");
   const $score = document.getElementById("score");
   const $coins = document.getElementById("coins");
   const $lives = document.getElementById("lives");
   const $power = document.getElementById("power");
+  const $dash  = document.getElementById("dash");
+  const $dj    = document.getElementById("dj");
+  const $shield= document.getElementById("shield");
+  const muteBtn = document.getElementById("muteBtn");
 
+  // ---------- Overlay ----------
   const overlay = document.getElementById("overlay");
   const ovTitle = document.getElementById("ovTitle");
   const ovText  = document.getElementById("ovText");
   const ovBtn   = document.getElementById("ovBtn");
+  const ovBtn2  = document.getElementById("ovBtn2");
+  const ovRow1  = document.getElementById("ovRow1");
+  const ovRow2  = document.getElementById("ovRow2");
+  const ovRow3  = document.getElementById("ovRow3");
+  const ovFooter= document.getElementById("ovFooter");
+  const levelSelect = document.getElementById("levelSelect");
+  const hardToggle  = document.getElementById("hardToggle");
+  const soundToggle = document.getElementById("soundToggle");
 
-  // ---------- World / Camera ----------
-  const view = { x: 0, y: 0, w: 960, h: 540 };
-  const gravity = 2200;          // px/s^2
+  // ---------- Storage ----------
+  const STORE_KEY = "sproutRunnerUltra_v1";
+  const store = loadStore();
+  hardToggle.checked = !!store.hardMode;
+  soundToggle.checked = store.soundOn !== false;
+
+  // ---------- Audio (iOS-safe) ----------
+  let audioCtx = null;
+  let audioUnlocked = false;
+  let soundOn = soundToggle.checked;
+
+  function unlockAudio(){
+    if (audioUnlocked) return;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    audioCtx = audioCtx || new Ctx();
+    audioCtx.resume?.();
+    audioUnlocked = true;
+  }
+
+  function beep(freq=440, dur=0.08, type="sine", gain=0.08){
+    if (!soundOn) return;
+    unlockAudio();
+    if (!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0);
+    o.stop(t0 + dur + 0.02);
+  }
+
+  const SFX = {
+    jump:  () => beep(520, 0.07, "triangle", 0.07),
+    dash:  () => beep(220, 0.09, "sawtooth", 0.06),
+    coin:  () => { beep(900, 0.05, "sine", 0.06); setTimeout(()=>beep(1200,0.05,"sine",0.05), 30); },
+    stomp: () => beep(180, 0.08, "square", 0.06),
+    hurt:  () => beep(110, 0.12, "sawtooth", 0.08),
+    pad:   () => beep(700, 0.08, "triangle", 0.08),
+    chk:   () => beep(760, 0.06, "sine", 0.07),
+    key:   () => { beep(600,0.06,"sine",0.06); setTimeout(()=>beep(820,0.06,"sine",0.06), 45); },
+    door:  () => beep(260, 0.12, "square", 0.06),
+    win:   () => { beep(660,0.08,"triangle",0.07); setTimeout(()=>beep(880,0.10,"triangle",0.08), 90); },
+    bossHit: () => beep(320,0.10,"square",0.07),
+    bossShoot: () => beep(340,0.06,"sawtooth",0.05),
+    buy:   () => beep(980,0.06,"sine",0.06),
+  };
+
+  soundToggle.addEventListener("change", () => {
+    soundOn = soundToggle.checked;
+    store.soundOn = soundOn;
+    saveStore(store);
+    muteBtn.textContent = soundOn ? "🔊" : "🔇";
+  });
+
+  muteBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    soundToggle.checked = soundOn;
+    store.soundOn = soundOn;
+    saveStore(store);
+    muteBtn.textContent = soundOn ? "🔊" : "🔇";
+    if (soundOn) SFX.coin();
+  });
+
+  muteBtn.textContent = soundOn ? "🔊" : "🔇";
+
+  // ---------- World ----------
+  const gravity = 2200;
   const friction = 0.84;
   const tile = 48;
 
-  // Level data: simple handcrafted chunks (rect platforms + items + enemies)
-  // coords in world pixels
-  function makeLevel() {
-    const platforms = [
-      rect(0, 490, 2200, 60), // ground
-      rect(320, 390, 240, 20),
-      rect(680, 340, 200, 20),
-      rect(980, 410, 200, 20),
-      rect(1240, 360, 260, 20),
-      rect(1600, 420, 200, 20),
-      rect(1860, 330, 240, 20),
-      rect(2140, 260, 260, 20),
-      rect(2520, 490, 900, 60),
-      rect(2650, 380, 240, 20),
-      rect(3000, 320, 220, 20),
-      rect(3320, 250, 220, 20),
-      rect(3620, 490, 900, 60),
-    ];
-
-    const coins = [
-      ...lineCoins(370, 340, 4),
-      ...lineCoins(720, 290, 3),
-      ...lineCoins(1020, 360, 3),
-      ...lineCoins(1320, 310, 4),
-      ...lineCoins(1680, 370, 2),
-      ...lineCoins(1940, 280, 4),
-      ...lineCoins(2220, 210, 4),
-      ...lineCoins(2700, 330, 5),
-      ...lineCoins(3040, 270, 3),
-      ...lineCoins(3360, 200, 3),
-    ];
-
-    const enemies = [
-      enemy(520, 460, 420, 620),
-      enemy(1120, 380, 1000, 1160),
-      enemy(1750, 390, 1600, 1780),
-      enemy(2800, 340, 2650, 2880),
-      enemy(3740, 460, 3620, 4450),
-    ];
-
-    const powerups = [
-      powerup(1460, 310),
-      powerup(3400, 200)
-    ];
-
-    const goal = rect(4400, 420, 60, 70);
-
-    return { platforms, coins, enemies, powerups, goal, width: 4600, height: 540 };
-  }
-
-  // ---------- Entities ----------
   function rect(x,y,w,h){ return {x,y,w,h}; }
   function aabb(a,b){
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
-  function lineCoins(x,y,n){
+  // Entities
+  function lineCoins(x,y,n, opts={}){
     const out = [];
-    for (let i=0;i<n;i++) out.push({x:x+i*36, y, r:10, taken:false});
+    for (let i=0;i<n;i++) out.push({x:x+i*36, y, r:10, taken:false, hidden:!!opts.hidden});
     return out;
   }
-
   function enemy(x,y,minX,maxX){
-    return { x,y, w:32, h:32, vx:80, minX, maxX, alive:true, stompedT:0 };
+    return { x,y, w:32, h:32, vx:90, minX, maxX, alive:true, stompedT:0 };
+  }
+  function powerup(x,y){ return { x,y, w:28, h:28, taken:false, bob:0, kind:"grow" }; }
+  function feather(x,y){ return { x,y, w:28, h:22, taken:false, bob:0, kind:"feather" }; }
+  function shieldOrb(x,y){ return { x,y, w:24, h:24, taken:false, bob:0, kind:"shield" }; }
+  function spike(x,y,w=36,h=18){ return { x,y, w,h }; }
+  function checkpoint(x,y){ return { x,y, w:22, h:46, hit:false }; }
+  function jumpPad(x, y, power = 980){ return { x, y, w: 44, h: 14, power, bounceT: 0 }; }
+  function keyItem(x,y,id="A"){ return { x,y, w:22, h:22, taken:false, id, bob:0 }; }
+  function door(x,y,w=48,h=84,id="A"){ return { x,y, w,h, id, open:false }; }
+
+  // Moving platform (oscillating)
+  function mover(x0,y0,x1,y1,w,h,speed){
+    return { x:x0, y:y0, w,h, x0,y0,x1,y1, t:0, speed, vx:0, vy:0, prevX:x0, prevY:y0 };
   }
 
-  function powerup(x,y){
-    return { x,y, w:28, h:28, taken:false, bob:0 };
+  // Boss + projectiles (simple)
+  function boss(x,y){
+    return { x,y, w:72, h:60, hp:3, alive:true, t:0, shootCd:1.0, vx:80, minX:x-220, maxX:x+220, hurtT:0 };
   }
 
+  // ---------- Levels ----------
+  // NOTE: Finish Wall + Goal Zone added to ALL levels so you can't jump over the finish.
+  // medal thresholds: {gold, silver, bronze} in seconds
+  const levels = [
+    // 1
+    () => {
+      const H = 540;
+      const platforms = [
+        rect(0, 490, 1900, 60),
+        rect(320, 390, 240, 20),
+        rect(680, 340, 200, 20),
+        rect(980, 410, 200, 20),
+        rect(1240, 360, 260, 20),
+      ];
+      const movers = [ mover(1520, 420, 1680, 420, 180, 18, 1.0) ];
+      const coins = [
+        ...lineCoins(370, 340, 4),
+        ...lineCoins(720, 290, 3),
+        ...lineCoins(1020, 360, 3),
+        ...lineCoins(1320, 310, 4),
+        ...lineCoins(1560, 370, 3),
+        ...lineCoins(1120, 460, 3, {hidden:true}),
+      ];
+      const enemies = [ enemy(520, 460, 420, 620), enemy(1120, 380, 1000, 1160) ];
+      const powerups = [ powerup(1460, 310), feather(820, 240) ];
+      const spikes = [ spike(870, 472, 90, 18), spike(1410, 472, 90, 18) ];
+      const checkpoints = [ checkpoint(900, 444) ];
+      const jumpPads = [ jumpPad(560, 476, 980), jumpPad(1260, 346, 1050) ];
+      const keys = [ keyItem(1640, 390, "A") ];
+      const doors = [ door(1780, 406, 52, 84, "A") ];
+      const goal = rect(1860, 420, 60, 70);
+
+      // NEW: Unjumpable finish wall + win trigger zone
+      const finishWall = rect(goal.x + goal.w - 12, 0, 12, H);
+      const goalZone   = rect(goal.x - 18, goal.y, 18, goal.h);
+
+      return {
+        name:"Green Steps",
+        platforms, movers, coins, enemies, powerups, spikes, checkpoints, jumpPads, keys, doors,
+        boss:null,
+        goal, goalZone, finishWall,
+        spawn:{x:80,y:100},
+        medal:{gold:28, silver:38, bronze:55},
+        width: 2000, height: H
+      };
+    },
+
+    // 2
+    () => {
+      const H = 540;
+      const platforms = [
+        rect(0, 490, 900, 60),
+        rect(250, 410, 180, 18),
+        rect(520, 350, 180, 18),
+        rect(820, 290, 220, 18),
+
+        rect(1200, 490, 900, 60),
+        rect(1320, 390, 220, 18),
+        rect(1640, 320, 220, 18),
+      ];
+      const movers = [
+        mover(980, 440, 1120, 360, 160, 18, 0.85),
+        mover(1520, 440, 1940, 440, 170, 18, 0.95),
+      ];
+      const coins = [
+        ...lineCoins(300, 360, 3),
+        ...lineCoins(570, 300, 3),
+        ...lineCoins(880, 240, 4),
+        ...lineCoins(1340, 340, 4),
+        ...lineCoins(1660, 270, 4),
+        ...lineCoins(1860, 460, 4, {hidden:true}),
+      ];
+      const enemies = [ enemy(610, 318, 520, 680), enemy(1380, 358, 1320, 1500), enemy(1700, 288, 1640, 1840) ];
+      const powerups = [ feather(1320, 330), shieldOrb(980, 330) ];
+      const spikes = [ spike(1040, 472, 160, 18), spike(1500, 472, 160, 18) ];
+      const checkpoints = [ checkpoint(1260, 444), checkpoint(1780, 274) ];
+      const jumpPads = [ jumpPad(380, 396, 980), jumpPad(980, 426, 1150) ];
+      const keys = [ keyItem(1100, 330, "B") ];
+      const doors = [ door(2040, 406, 52, 84, "B") ];
+      const goal = rect(2120, 420, 60, 70);
+
+      const finishWall = rect(goal.x + goal.w - 12, 0, 12, H);
+      const goalZone   = rect(goal.x - 18, goal.y, 18, goal.h);
+
+      return {
+        name:"Sky Lifts",
+        platforms, movers, coins, enemies, powerups, spikes, checkpoints, jumpPads, keys, doors,
+        boss:null,
+        goal, goalZone, finishWall,
+        spawn:{x:80,y:100},
+        medal:{gold:34, silver:46, bronze:65},
+        width: 2300, height: H
+      };
+    },
+
+    // 3
+    () => {
+      const H = 540;
+      const platforms = [
+        rect(0, 490, 700, 60),
+        rect(220, 380, 200, 18),
+        rect(520, 300, 200, 18),
+
+        rect(900, 490, 560, 60),
+        rect(980, 390, 200, 18),
+        rect(1240, 330, 200, 18),
+
+        rect(1600, 490, 1050, 60),
+        rect(1680, 390, 240, 18),
+        rect(2040, 310, 240, 18),
+        rect(2360, 250, 240, 18),
+      ];
+      platforms.push(rect(740, 260, 22, 230));
+      platforms.push(rect(1460, 200, 22, 290));
+
+      const movers = [
+        mover(700, 440, 900, 440, 170, 18, 1.15),
+        mover(1460, 420, 1600, 350, 160, 18, 1.05),
+        mover(1920, 420, 2140, 420, 180, 18, 1.15),
+      ];
+      const coins = [
+        ...lineCoins(260, 330, 3),
+        ...lineCoins(560, 250, 3),
+        ...lineCoins(1020, 340, 4),
+        ...lineCoins(1260, 280, 3),
+        ...lineCoins(1720, 340, 4),
+        ...lineCoins(2080, 260, 4),
+        ...lineCoins(2400, 200, 4),
+        ...lineCoins(760, 200, 4, {hidden:true}),
+      ];
+      const enemies = [
+        enemy(260, 348, 220, 400),
+        enemy(1050, 358, 980, 1160),
+        enemy(1780, 358, 1680, 1900),
+      ];
+      const powerups = [ powerup(2400, 200), feather(740, 210) ];
+      const spikes = [
+        spike(740, 472, 160, 18),
+        spike(1460, 472, 140, 18),
+        spike(1560, 472, 140, 18),
+      ];
+      const checkpoints = [ checkpoint(980, 444), checkpoint(1700, 444) ];
+      const jumpPads = [ jumpPad(540, 286, 1080), jumpPad(1700, 476, 980) ];
+      const keys = [ keyItem(2060, 270, "C") ];
+      const doors = [ door(2580, 406, 52, 84, "C") ];
+      const goal = rect(2660, 420, 60, 70);
+
+      const finishWall = rect(goal.x + goal.w - 12, 0, 12, H);
+      const goalZone   = rect(goal.x - 18, goal.y, 18, goal.h);
+
+      return {
+        name:"Wall Garden",
+        platforms, movers, coins, enemies, powerups, spikes, checkpoints, jumpPads, keys, doors,
+        boss:null,
+        goal, goalZone, finishWall,
+        spawn:{x:80,y:100},
+        medal:{gold:40, silver:54, bronze:75},
+        width: 2900, height: H
+      };
+    },
+
+    // 4
+    () => {
+      const H = 820;
+      const platforms = [
+        rect(0, 490, 850, 60),
+        rect(260, 410, 220, 18),
+        rect(540, 340, 240, 18),
+
+        rect(980, 490, 900, 60),
+        rect(1120, 390, 240, 18),
+        rect(1440, 310, 240, 18),
+
+        rect(2060, 490, 1100, 60),
+        rect(2200, 390, 260, 18),
+        rect(2560, 330, 260, 18),
+      ];
+
+      platforms.push(rect(1460, 560, 420, 18));
+      platforms.push(rect(1460, 700, 420, 18));
+
+      const movers = [ mover(820, 420, 980, 360, 160, 18, 1.0) ];
+      const coins = [
+        ...lineCoins(300, 360, 4),
+        ...lineCoins(580, 290, 4),
+        ...lineCoins(1160, 340, 4),
+        ...lineCoins(1480, 260, 4),
+        ...lineCoins(2240, 340, 5),
+        ...lineCoins(2600, 280, 5),
+        ...lineCoins(1500, 640, 6, {hidden:true}),
+      ];
+
+      const enemies = [
+        enemy(360, 460, 260, 540),
+        enemy(1220, 358, 1120, 1360),
+        enemy(2320, 358, 2200, 2460),
+      ];
+
+      const powerups = [ shieldOrb(1460, 260), feather(2560, 280) ];
+
+      const spikes = [
+        spike(900, 472, 80, 18),
+        spike(1880, 472, 180, 18),
+      ];
+
+      const checkpoints = [ checkpoint(1120, 444), checkpoint(2280, 444) ];
+
+      const jumpPads = [
+        jumpPad(680, 476, 980),
+        jumpPad(1500, 476, 1400),
+      ];
+
+      const keys = [ keyItem(560, 290, "D"), keyItem(2560, 280, "E") ];
+      const doors = [ door(1960, 406, 52, 84, "D"), door(3060, 406, 52, 84, "E") ];
+
+      const goal = rect(3140, 420, 60, 70);
+
+      const finishWall = rect(goal.x + goal.w - 12, 0, 12, H);
+      const goalZone   = rect(goal.x - 18, goal.y, 18, goal.h);
+
+      return {
+        name:"Twin Keys",
+        platforms, movers, coins, enemies, powerups, spikes, checkpoints, jumpPads, keys, doors,
+        boss:null,
+        goal, goalZone, finishWall,
+        spawn:{x:80,y:100},
+        medal:{gold:55, silver:72, bronze:95},
+        width: 3300, height: H
+      };
+    },
+
+    // 5
+    () => {
+      const H = 540;
+      const platforms = [
+        rect(0, 490, 700, 60),
+        rect(220, 390, 180, 18),
+        rect(480, 310, 180, 18),
+        rect(760, 240, 200, 18),
+
+        rect(1120, 490, 700, 60),
+        rect(1300, 390, 200, 18),
+        rect(1560, 320, 200, 18),
+
+        rect(2060, 490, 900, 60),
+        rect(2240, 390, 240, 18),
+        rect(2560, 300, 240, 18),
+        rect(2860, 220, 240, 18),
+      ];
+
+      const movers = [
+        mover(960, 420, 1120, 340, 170, 18, 1.1),
+        mover(1820, 420, 2060, 420, 190, 18, 1.2),
+      ];
+
+      const coins = [
+        ...lineCoins(260, 340, 3),
+        ...lineCoins(520, 260, 3),
+        ...lineCoins(800, 190, 4),
+        ...lineCoins(1320, 340, 4),
+        ...lineCoins(1580, 270, 4),
+        ...lineCoins(2280, 340, 5),
+        ...lineCoins(2600, 250, 5),
+        ...lineCoins(2900, 170, 5),
+      ];
+
+      const enemies = [
+        enemy(360, 460, 200, 540),
+        enemy(1440, 358, 1300, 1500),
+        enemy(2360, 358, 2240, 2460),
+      ];
+
+      const powerups = [ feather(1560, 270), shieldOrb(2860, 170) ];
+
+      const spikes = [
+        spike(700, 472, 140, 18),
+        spike(1820, 472, 220, 18),
+        spike(2060, 472, 160, 18),
+      ];
+
+      const checkpoints = [ checkpoint(1300, 444), checkpoint(2240, 444) ];
+      const jumpPads = [ jumpPad(560, 476, 1150), jumpPad(2560, 286, 1080) ];
+      const keys = [ keyItem(800, 190, "F") ];
+      const doors = [ door(3080, 406, 52, 84, "F") ];
+      const goal = rect(3160, 420, 60, 70);
+
+      const finishWall = rect(goal.x + goal.w - 12, 0, 12, H);
+      const goalZone   = rect(goal.x - 18, goal.y, 18, goal.h);
+
+      return {
+        name:"Rush Ridge",
+        platforms, movers, coins, enemies, powerups, spikes, checkpoints, jumpPads, keys, doors,
+        boss:null,
+        goal, goalZone, finishWall,
+        spawn:{x:80,y:100},
+        medal:{gold:65, silver:82, bronze:110},
+        width: 3400, height: H
+      };
+    },
+
+    // 6 (Boss level)
+    () => {
+      const H = 540;
+      const platforms = [
+        rect(0, 490, 900, 60),
+        rect(220, 390, 220, 18),
+        rect(520, 320, 220, 18),
+
+        rect(980, 490, 1500, 60),
+        rect(1160, 390, 240, 18),
+        rect(1500, 330, 240, 18),
+        rect(1840, 390, 240, 18),
+      ];
+
+      const movers = [ mover(860, 420, 980, 360, 140, 18, 1.15) ];
+
+      const coins = [
+        ...lineCoins(260, 340, 3),
+        ...lineCoins(560, 270, 3),
+        ...lineCoins(1200, 340, 4),
+        ...lineCoins(1540, 280, 4),
+        ...lineCoins(1880, 340, 4),
+      ];
+
+      const enemies = [ enemy(1180, 460, 980, 1320) ];
+
+      const powerups = [ shieldOrb(520, 270), feather(1500, 280) ];
+
+      const spikes = [ spike(900, 472, 80, 18), spike(1400, 472, 120, 18) ];
+
+      const checkpoints = [ checkpoint(1160, 444) ];
+      const jumpPads = [ jumpPad(560, 476, 1150), jumpPad(1500, 316, 1150) ];
+
+      const keys = [];
+      const doors = [];
+
+      const theBoss = boss(2120, 430);
+      const goal = rect(2440, 420, 60, 70);
+
+      const finishWall = rect(goal.x + goal.w - 12, 0, 12, H);
+      const goalZone   = rect(goal.x - 18, goal.y, 18, goal.h);
+
+      return {
+        name:"Boss Bloom",
+        platforms, movers, coins, enemies, powerups, spikes, checkpoints, jumpPads, keys, doors,
+        boss:theBoss,
+        goal, goalZone, finishWall,
+        spawn:{x:80,y:100},
+        medal:{gold:70, silver:90, bronze:125},
+        width: 2600, height: H
+      };
+    },
+  ];
+
+  // Populate level select with unlocked levels
+  function rebuildLevelSelect(){
+    levelSelect.innerHTML = "";
+    const unlocked = store.unlocked ?? 1;
+    for (let i=0;i<levels.length;i++){
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = `Level ${i+1}${i < unlocked ? "" : " 🔒"}`;
+      opt.disabled = i >= unlocked;
+      levelSelect.appendChild(opt);
+    }
+    const last = Math.min((store.lastLevel ?? 0), (store.unlocked ?? 1) - 1);
+    levelSelect.value = String(Math.max(0, last));
+  }
+
+  // ---------- Player ----------
   const player = {
     x: 80, y: 100, w: 28, h: 34,
     vx: 0, vy: 0,
     onGround: false,
-    coyote: 0,            // grace time after leaving ground
-    jumpBuffer: 0,        // grace time before landing
+    coyote: 0,
+    jumpBuffer: 0,
     invuln: 0,
+
     lives: 3,
     coins: 0,
     score: 0,
-    big: false
+    big: false,
+
+    dashCd: 0,
+    dashing: 0,
+    facing: 1,
+
+    respawnX: 80,
+    respawnY: 100,
+
+    // Features
+    shield: 0,
+    doubleJumpT: 0,
+    jumpsLeft: 0,
+    wallSlide: false,
+    keys: new Set(),
   };
+
+  // Shop upgrades (persist)
+  const upgrades = store.upgrades || { dashCdMul: 1.0, extraLivesBought: 0 };
+  store.upgrades = upgrades;
+
+  const move = { accel: 1200, max: 320, jump: 720, dashSpeed: 720 };
 
   // ---------- Input ----------
   const keys = new Set();
+  let wasJumpDown = false;
+  let wasDashDown = false;
+
   window.addEventListener("keydown", (e) => {
-    if (["ArrowLeft","ArrowRight","ArrowUp","Space","KeyA","KeyD","KeyW","KeyR"].includes(e.code)) e.preventDefault();
+    if (["ArrowLeft","ArrowRight","ArrowUp","Space","KeyA","KeyD","KeyW","KeyR","KeyP","ShiftLeft","ShiftRight","KeyX"].includes(e.code)) e.preventDefault();
     keys.add(e.code);
-    if (e.code === "KeyR") restart();
+
+    if (e.code === "KeyR") restartLevel();
+    if (e.code === "KeyP") togglePause();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
 
   // touch buttons
-  const touchState = { left:false, right:false, jump:false };
+  const touchState = { left:false, right:false, jump:false, dash:false };
   function bindTouch(id, prop){
     const el = document.getElementById(id);
     const set = (v) => { touchState[prop]=v; };
@@ -268,103 +795,579 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
   bindTouch("left","left");
   bindTouch("right","right");
   bindTouch("jump","jump");
+  bindTouch("dashBtn","dash");
+
+  // ---------- Particles + Shake ----------
+  const particles = [];
+  let shakeT = 0;
+  let shakeMag = 0;
+
+  function spawnParticles(x,y,n=10, speed=220, life=0.35){
+    for (let i=0;i<n;i++){
+      const a = Math.random() * Math.PI * 2;
+      const s = (0.45 + Math.random()*0.55) * speed;
+      particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life, t:0 });
+    }
+  }
+
+  function doShake(mag=6, t=0.12){
+    shakeMag = Math.max(shakeMag, mag);
+    shakeT = Math.max(shakeT, t);
+  }
 
   // ---------- Game State ----------
-  let level = makeLevel();
+  let levelIndex = 0;
+  let level = null;
   let last = performance.now();
-  let paused = false;
+  let paused = true;
 
-  function restart() {
-    level = makeLevel();
-    player.x = 80; player.y = 100;
+  // timer & difficulty
+  let levelTime = 0;
+  let hardMode = !!store.hardMode;
+  let medalText = "";
+
+  // projectiles
+  const projectiles = [];
+
+  function loadLevel(i, keepStats=false){
+    levelIndex = Math.max(0, Math.min(levels.length-1, i));
+    level = levels[levelIndex]();
+
+    resize();
+
+    if (!keepStats){
+      player.lives = 3 + (upgrades.extraLivesBought|0);
+      player.coins = 0;
+      player.score = 0;
+      player.big = false;
+      player.w = 28;
+      player.h = 34;
+
+      player.shield = 0;
+      player.doubleJumpT = 0;
+      player.keys = new Set();
+    }
+
+    hardMode = !!store.hardMode;
+    if (hardMode) {
+      for (const e of level.enemies) e.vx *= 1.25;
+      if (level.boss) level.boss.vx *= 1.15;
+    }
+
+    player.x = level.spawn.x;
+    player.y = level.spawn.y;
     player.vx = 0; player.vy = 0;
     player.onGround = false;
     player.coyote = 0;
     player.jumpBuffer = 0;
     player.invuln = 0;
-    player.lives = 3;
-    player.coins = 0;
-    player.score = 0;
-    player.big = false;
-    paused = false;
-    overlay.style.display = "none";
+    player.dashCd = 0;
+    player.dashing = 0;
+    player.facing = 1;
+    player.respawnX = level.spawn.x;
+    player.respawnY = level.spawn.y;
+
+    levelTime = 0;
+    medalText = "";
+    particles.length = 0;
+    projectiles.length = 0;
+    shakeT = 0; shakeMag = 0;
+
+    view.x = 0; view.y = 0;
     syncHud();
   }
 
-  function win() {
+  function restartLevel(){
+    const savedLives = player.lives;
+    const savedScore = player.score;
+    const savedCoins = player.coins;
+    const savedBig = player.big;
+    const savedShield = player.shield;
+    const savedDJT = player.doubleJumpT;
+    const savedKeys = new Set(player.keys);
+
+    loadLevel(levelIndex, true);
+
+    player.lives = savedLives;
+    player.score = savedScore;
+    player.coins = savedCoins;
+    player.big = savedBig;
+    player.shield = savedShield;
+    player.doubleJumpT = savedDJT;
+    player.keys = savedKeys;
+
+    if (player.big) player.h = 48;
+
+    paused = false;
+    overlay.style.display = "none";
+  }
+
+  function startGame(){
+    unlockAudio();
+    store.hardMode = hardToggle.checked;
+    store.soundOn = soundToggle.checked;
+    hardMode = store.hardMode;
+    soundOn = store.soundOn !== false;
+    saveStore(store);
+    muteBtn.textContent = soundOn ? "🔊" : "🔇";
+
+    const idx = parseInt(levelSelect.value, 10) || 0;
+    loadLevel(idx, false);
+
+    store.lastLevel = idx;
+    saveStore(store);
+
+    paused = false;
+    overlay.style.display = "none";
+    resize();
+  }
+
+  function showHowTo(){
+    ovTitle.textContent = "How to Play";
+    ovText.innerHTML =
+      `Move with <b>A/D</b> or <b>← →</b>.<br/>
+       Jump with <b>Space</b>/<b>W</b>/<b>↑</b>.<br/>
+       Dash with <b>Shift</b> or <b>X</b> (short burst).<br/><br/>
+       <b>New Features</b><br/>
+       • <b>Jump Pads</b> launch you higher<br/>
+       • <b>Feather</b> gives <b>Double Jump</b> for a while<br/>
+       • <b>Wall Slide/Jump</b>: hold into a wall while falling<br/>
+       • <b>Keys</b> open matching <b>Doors</b><br/>
+       • <b>Shop</b> appears after each level<br/>
+       • <b>Boss</b> at the last level<br/><br/>
+       <span class="muted">Tip: Hidden coins glow only when you're close.</span>`;
+
+    ovRow1.style.display = "none";
+    ovRow2.style.display = "none";
+    ovFooter.style.display = "none";
+
+    ovBtn.textContent = "Back";
+    ovBtn.onclick = showStart;
+
+    ovBtn2.textContent = "Start";
+    ovBtn2.onclick = startGame;
+
+    overlay.style.display = "grid";
     paused = true;
-    ovTitle.textContent = "You Win!";
-    ovText.innerHTML = `Final Score: <b>${player.score}</b><br/>Press <b>R</b> to play again.`;
+  }
+
+  function showStart(){
+    rebuildLevelSelect();
+
+    ovRow1.style.display = "";
+    ovRow2.style.display = "";
+    ovFooter.style.display = "";
+
+    ovTitle.textContent = "Sprout Runner Ultra";
+    ovText.innerHTML = `<b>Made By Kairav</b><br/><span class="muted">Now with medals, shop, keys/doors, wall-jumps, particles, boss!</span>`;
+
+    ovBtn.textContent = "Start";
+    ovBtn.onclick = startGame;
+
+    ovBtn2.textContent = "How to Play";
+    ovBtn2.onclick = showHowTo;
+
+    overlay.style.display = "grid";
+    paused = true;
+    resize();
+  }
+
+  function togglePause(){
+    if (overlay.style.display === "grid" && ovTitle.textContent !== "Paused") return;
+    paused = !paused;
+    if (paused) {
+      ovTitle.textContent = "Paused";
+      ovText.innerHTML = `Press <b>P</b> to resume.<br/><span class="muted">Restart: R</span>`;
+      ovRow1.style.display = "none";
+      ovRow2.style.display = "none";
+      ovFooter.style.display = "none";
+
+      ovBtn.textContent = "Resume";
+      ovBtn.onclick = () => { overlay.style.display = "none"; paused=false; resize(); };
+
+      ovBtn2.textContent = "Restart";
+      ovBtn2.onclick = () => { overlay.style.display = "none"; paused=false; restartLevel(); };
+
+      overlay.style.display = "grid";
+    } else {
+      overlay.style.display = "none";
+      resize();
+    }
+  }
+
+  function awardMedal(t, medal){
+    if (t <= medal.gold) return "🥇 Gold";
+    if (t <= medal.silver) return "🥈 Silver";
+    if (t <= medal.bronze) return "🥉 Bronze";
+    return "🌱 Clear";
+  }
+
+  function showShop(nextIndex){
+    paused = true;
+
+    const shopItems = [
+      { id:"life",  name:"+1 Life",            cost: 8,  buy: () => { player.lives += 1; upgrades.extraLivesBought = (upgrades.extraLivesBought|0) + 1; } },
+      { id:"dash",  name:"Dash Cooldown -10%", cost: 12, buy: () => { upgrades.dashCdMul = Math.max(0.6, (upgrades.dashCdMul||1) * 0.9); } },
+      { id:"shield",name:"Shield +1",          cost: 10, buy: () => { player.shield += 1; } },
+      { id:"dj",    name:"Double Jump +10s",   cost: 10, buy: () => { player.doubleJumpT += 10; } },
+    ];
+
+    ovTitle.textContent = "Shop";
+    ovRow1.style.display = "none";
+    ovRow2.style.display = "none";
+    ovFooter.style.display = "none";
+
+    const best = (store.bestTimes?.[levelIndex] ?? null);
+    const bestLine = best ? `Best: <b>${best.toFixed(1)}s</b>` : `Best: <b>—</b>`;
+    ovText.innerHTML =
+      `Level complete: <b>${level.name}</b><br/>
+       Medal: <b>${medalText}</b> · ${bestLine}<br/><br/>
+       Coins: <b>${player.coins}</b> · Lives: <b>${player.lives}</b> · Shield: <b>${player.shield}</b><br/>
+       <span class="muted">Buy upgrades (kept across levels).</span>`;
+
+    const wrap = document.createElement("div");
+    wrap.className = "row";
+    wrap.style.marginTop = "12px";
+
+    for (const it of shopItems){
+      const b = document.createElement("button");
+      b.textContent = `${it.name} (${it.cost}🪙)`;
+      b.className = "secondary";
+      b.style.fontWeight = "900";
+      b.onclick = () => {
+        unlockAudio();
+        if (player.coins < it.cost) { SFX.hurt(); doShake(4,0.08); return; }
+        player.coins -= it.cost;
+        it.buy();
+        SFX.buy();
+        spawnParticles(view.x + view.w*0.5, 90, 12, 240, 0.35);
+        store.upgrades = upgrades;
+        saveStore(store);
+        showShop(nextIndex);
+      };
+      wrap.appendChild(b);
+    }
+
+    ovRow3.innerHTML = "";
+    ovRow3.appendChild(wrap);
+
+    const controls = document.createElement("div");
+    controls.className = "row";
+    controls.style.marginTop = "12px";
+
+    const btnNext = document.createElement("button");
+    btnNext.textContent = (nextIndex < levels.length) ? "Next Level" : "Finish";
+    btnNext.onclick = () => {
+      unlockAudio();
+      overlay.style.display = "none";
+      if (nextIndex < levels.length){
+        loadLevel(nextIndex, true);
+        paused = false;
+      } else {
+        showStart();
+      }
+      resize();
+    };
+
+    const btnSelect = document.createElement("button");
+    btnSelect.className = "secondary";
+    btnSelect.textContent = "Level Select";
+    btnSelect.onclick = showStart;
+
+    controls.appendChild(btnNext);
+    controls.appendChild(btnSelect);
+    ovRow3.appendChild(controls);
+
     overlay.style.display = "grid";
   }
 
-  function gameOver() {
+  function winLevel(){
+    unlockAudio();
+    SFX.win();
+
+    paused = true;
+
+    store.bestTimes = store.bestTimes || [];
+    const prevBest = store.bestTimes[levelIndex];
+    if (prevBest == null || levelTime < prevBest) store.bestTimes[levelIndex] = levelTime;
+
+    medalText = awardMedal(levelTime, level.medal);
+
+    const next = levelIndex + 1;
+    store.unlocked = Math.max(store.unlocked || 1, Math.min(levels.length, next+1));
+    store.lastLevel = Math.min(next, (store.unlocked||1)-1);
+    saveStore(store);
+
+    showShop(next);
+  }
+
+  function gameOver(){
+    unlockAudio();
     paused = true;
     ovTitle.textContent = "Game Over";
-    ovText.innerHTML = `Final Score: <b>${player.score}</b><br/>Press <b>R</b> to retry.`;
+    ovText.innerHTML = `Final Score: <b>${player.score|0}</b><br/>Coins: <b>${player.coins|0}</b><br/><span class="muted">Press R to retry or go to Level Select.</span>`;
+
+    ovRow1.style.display = "none";
+    ovRow2.style.display = "none";
+    ovFooter.style.display = "none";
+
+    ovBtn.textContent = "Retry";
+    ovBtn.onclick = () => { overlay.style.display = "none"; paused=false; restartLevel(); resize(); };
+
+    ovBtn2.textContent = "Level Select";
+    ovBtn2.onclick = showStart;
+
+    ovRow3.style.display = "";
     overlay.style.display = "grid";
   }
 
-  ovBtn.addEventListener("click", restart);
+  ovBtn.onclick = startGame;
+  ovBtn2.onclick = showHowTo;
 
+  hardToggle.addEventListener("change", () => {
+    store.hardMode = hardToggle.checked;
+    saveStore(store);
+  });
+
+  // ---------- HUD sync ----------
   function syncHud(){
+    $lvl.textContent = (levelIndex + 1);
+    $time.textContent = (levelTime).toFixed(1);
     $score.textContent = player.score|0;
     $coins.textContent = player.coins|0;
     $lives.textContent = player.lives|0;
     $power.textContent = player.big ? "Big" : "Small";
+    $dash.textContent = (player.dashCd <= 0 && player.dashing <= 0) ? "Ready" : (player.dashing>0 ? "Dashing" : "Cooldown");
+    $dj.textContent = (player.doubleJumpT > 0) ? `${player.doubleJumpT.toFixed(0)}s` : "Off";
+    $shield.textContent = player.shield|0;
+  }
+
+  // ---------- Moving platforms ----------
+  function updateMovers(dt){
+    for (const m of level.movers){
+      m.prevX = m.x; m.prevY = m.y;
+      m.t += dt * m.speed;
+      const u = 0.5 - 0.5 * Math.cos(m.t * Math.PI * 2);
+      m.x = m.x0 + (m.x1 - m.x0) * u;
+      m.y = m.y0 + (m.y1 - m.y0) * u;
+      m.vx = (m.x - m.prevX) / dt;
+      m.vy = (m.y - m.prevY) / dt;
+    }
+  }
+
+  // ---------- Solids ----------
+  function allSolids(){
+    const doorsAsSolids = (level.doors || []).filter(d => !d.open);
+    const finish = level.finishWall ? [level.finishWall] : [];
+    return [...level.platforms, ...level.movers, ...doorsAsSolids, ...finish];
+  }
+
+  // ---------- Collisions ----------
+  function resolvePlayerCollisions(axis){
+    const solids = allSolids();
+    for (const pl of solids){
+      if (!aabb(player, pl)) continue;
+
+      if (axis === "x") {
+        if (player.vx > 0) player.x = pl.x - player.w;
+        else if (player.vx < 0) player.x = pl.x + pl.w;
+        player.vx = 0;
+      } else {
+        if (player.vy > 0) {
+          player.y = pl.y - player.h;
+          player.vy = 0;
+          player.onGround = true;
+          player.jumpsLeft = (player.doubleJumpT > 0) ? 2 : 1;
+          if (level.movers.includes(pl)) player.x += pl.vx * 0.016;
+        } else if (player.vy < 0) {
+          player.y = pl.y + pl.h;
+          player.vy = 0;
+        }
+      }
+    }
+  }
+
+  // ---------- Dash ----------
+  function tryDash(){
+    if (player.dashCd > 0 || player.dashing > 0) return;
+    SFX.dash();
+    spawnParticles(player.x + player.w/2, player.y + player.h/2, 10, 260, 0.28);
+
+    player.dashing = 0.18;
+    const cd = 0.65 * (upgrades.dashCdMul || 1);
+    player.dashCd = Math.max(0.25, cd);
+    player.vy *= 0.2;
+    player.vx = move.dashSpeed * player.facing;
+  }
+
+  // ---------- Damage / respawn ----------
+  function hurt(instantDeath){
+    if (player.invuln > 0) return;
+
+    if (player.shield > 0) {
+      player.shield -= 1;
+      player.invuln = 0.9;
+      SFX.chk();
+      doShake(8, 0.10);
+      spawnParticles(player.x + player.w/2, player.y + player.h/2, 16, 300, 0.35);
+      return;
+    }
+
+    if (!instantDeath && player.big) {
+      player.big = false;
+      player.score = Math.max(0, player.score - 150);
+      const oldH = player.h;
+      player.h = 34;
+      player.y += (oldH - player.h);
+      player.invuln = 1.2;
+      player.vx = -player.facing * 260;
+      player.vy = -420;
+      SFX.hurt();
+      doShake(8, 0.12);
+      return;
+    }
+
+    player.lives -= 1;
+    SFX.hurt();
+    doShake(10, 0.14);
+
+    if (player.lives <= 0) return gameOver();
+
+    player.invuln = 1.2;
+    player.x = player.respawnX;
+    player.y = player.respawnY;
+    player.vx = 0; player.vy = 0;
+    player.dashCd = 0.25;
+    player.dashing = 0;
+  }
+
+  // ---------- Wall slide / wall jump ----------
+  function wallInfo(){
+    const solids = allSolids();
+    const pad = 2;
+    const leftProbe  = { x: player.x - pad, y: player.y + 4, w: pad, h: player.h - 8 };
+    const rightProbe = { x: player.x + player.w, y: player.y + 4, w: pad, h: player.h - 8 };
+
+    let touchL = false, touchR = false;
+    for (const s of solids){
+      if (!touchL && aabb(leftProbe, s)) touchL = true;
+      if (!touchR && aabb(rightProbe, s)) touchR = true;
+      if (touchL && touchR) break;
+    }
+    return { touchL, touchR };
+  }
+
+  // ---------- Boss projectiles ----------
+  function spawnProjectile(x,y,vx,vy){
+    projectiles.push({ x, y, w: 10, h: 10, vx, vy, life: 3.0 });
+  }
+
+  // ---------- Camera ----------
+  function updateCamera(dt){
+    const targetX = player.x - view.w * 0.40;
+    const minX = 0;
+    const maxX = Math.max(0, level.width - view.w);
+    view.x += (targetX - view.x) * Math.min(1, dt*6);
+    view.x = Math.max(minX, Math.min(maxX, view.x));
+
+    const targetY = player.y - view.h * 0.45;
+    const minY = 0;
+    const maxY = Math.max(0, level.height - view.h);
+    view.y += (targetY - view.y) * Math.min(1, dt*6);
+    view.y = Math.max(minY, Math.min(maxY, view.y));
   }
 
   // ---------- Physics / Movement ----------
-  const move = { accel: 1200, max: 320, jump: 720 };
-
   function step(dt){
-    // input
+    levelTime += dt;
+
+    updateMovers(dt);
+
+    player.invuln = Math.max(0, player.invuln - dt);
+    player.dashCd = Math.max(0, player.dashCd - dt);
+    player.dashing = Math.max(0, player.dashing - dt);
+    player.doubleJumpT = Math.max(0, player.doubleJumpT - dt);
+    if (player.doubleJumpT > 0 && player.onGround) player.jumpsLeft = 2;
+    if (player.doubleJumpT <= 0 && player.onGround) player.jumpsLeft = 1;
+
     const left  = keys.has("ArrowLeft") || keys.has("KeyA") || touchState.left;
     const right = keys.has("ArrowRight")|| keys.has("KeyD") || touchState.right;
-    const jumpPressed = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || touchState.jump;
+    const jumpDown = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || touchState.jump;
+    const dashDown = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyX") || touchState.dash;
 
-    // jump buffer
-    if (jumpPressed) player.jumpBuffer = 0.12;
+    if (left)  { player.vx -= move.accel * dt; player.facing = -1; }
+    if (right) { player.vx += move.accel * dt; player.facing =  1; }
+
+    if (jumpDown && !wasJumpDown) player.jumpBuffer = 0.12;
     else player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
+    wasJumpDown = jumpDown;
 
-    // horizontal accel
-    if (left)  player.vx -= move.accel * dt;
-    if (right) player.vx += move.accel * dt;
+    if (dashDown && !wasDashDown) tryDash();
+    wasDashDown = dashDown;
 
-    // clamp
-    player.vx = Math.max(-move.max, Math.min(move.max, player.vx));
+    if (player.dashing <= 0) {
+      player.vx = Math.max(-move.max, Math.min(move.max, player.vx));
+      if (!left && !right) player.vx *= Math.pow(friction, dt*60);
+    }
 
-    // friction when no input
-    if (!left && !right) player.vx *= Math.pow(friction, dt*60);
+    player.vy += gravity * dt * (player.dashing > 0 ? 0.25 : 1);
 
-    // gravity
-    player.vy += gravity * dt;
-
-    // coyote time
     if (player.onGround) player.coyote = 0.10;
     else player.coyote = Math.max(0, player.coyote - dt);
 
-    // jump if buffered and (on ground or coyote)
-    if (player.jumpBuffer > 0 && (player.onGround || player.coyote > 0)) {
-      player.vy = -move.jump * (player.big ? 1.03 : 1.0);
-      player.onGround = false;
-      player.coyote = 0;
-      player.jumpBuffer = 0;
+    const { touchL, touchR } = wallInfo();
+    player.wallSlide = false;
+    if (!player.onGround && player.vy > 0) {
+      if ((touchL && left) || (touchR && right)) {
+        player.wallSlide = true;
+        player.vy = Math.min(player.vy, 340);
+      }
     }
 
-    // integrate X then resolve collisions
+    if (player.jumpBuffer > 0) {
+      const canGround = player.onGround || player.coyote > 0;
+      const canWall = player.wallSlide;
+      const canDouble = (!canGround && !canWall && player.jumpsLeft > 1);
+
+      if (canWall) {
+        player.vy = -move.jump * 1.02;
+        player.vx = (touchL ? 1 : -1) * 360;
+        player.onGround = false;
+        player.coyote = 0;
+        player.jumpBuffer = 0;
+        player.wallSlide = false;
+        SFX.jump();
+        doShake(4,0.08);
+        spawnParticles(player.x + player.w/2, player.y + player.h, 10, 220, 0.25);
+      } else if (canGround) {
+        player.vy = -move.jump * (player.big ? 1.03 : 1.0);
+        player.onGround = false;
+        player.coyote = 0;
+        player.jumpBuffer = 0;
+        SFX.jump();
+        spawnParticles(player.x + player.w/2, player.y + player.h, 10, 220, 0.25);
+      } else if (canDouble) {
+        player.jumpsLeft = 1;
+        player.vy = -move.jump * 0.98;
+        player.jumpBuffer = 0;
+        SFX.jump();
+        spawnParticles(player.x + player.w/2, player.y + player.h/2, 12, 250, 0.3);
+        doShake(4,0.08);
+      }
+    }
+
+    if (!jumpDown && player.vy < 0) player.vy *= 0.88;
+
     player.x += player.vx * dt;
     resolvePlayerCollisions("x");
 
-    // integrate Y then resolve collisions
     player.y += player.vy * dt;
     player.onGround = false;
     resolvePlayerCollisions("y");
 
-    // fall death
-    if (player.y > 900) hurt(true);
+    if (player.y > (level.height + 400)) hurt(true);
 
-    // coins
+    // coins (hidden coins appear only near player)
     for (const c of level.coins){
       if (c.taken) continue;
       const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
@@ -373,6 +1376,8 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
         c.taken = true;
         player.coins += 1;
         player.score += 100;
+        SFX.coin();
+        spawnParticles(c.x, c.y, 12, 240, 0.35);
       }
     }
 
@@ -384,39 +1389,124 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
       const rr = {x:p.x, y:p.y + Math.sin(p.bob*5)*4, w:p.w, h:p.h};
       if (aabb(pr, rr)){
         p.taken = true;
-        if (!player.big) {
-          player.big = true;
-          player.score += 500;
-          // increase hitbox slightly, keep feet planted
-          const oldH = player.h;
-          player.h = 48;
-          player.y -= (player.h - oldH);
-        } else {
-          player.score += 250;
+        if (p.kind === "grow") {
+          if (!player.big) {
+            player.big = true;
+            player.score += 500;
+            const oldH = player.h;
+            player.h = 48;
+            player.y -= (player.h - oldH);
+          } else {
+            player.score += 250;
+          }
+          SFX.chk();
+          spawnParticles(p.x + p.w/2, p.y + p.h/2, 18, 280, 0.4);
+        } else if (p.kind === "feather") {
+          player.doubleJumpT += 12;
+          player.score += 200;
+          SFX.key();
+          spawnParticles(p.x + p.w/2, p.y + p.h/2, 18, 280, 0.4);
+        } else if (p.kind === "shield") {
+          player.shield += 1;
+          player.score += 150;
+          SFX.chk();
+          spawnParticles(p.x + p.w/2, p.y + p.h/2, 18, 280, 0.4);
         }
       }
     }
 
-    // enemies update + interactions
+    // checkpoints
+    for (const cp of level.checkpoints){
+      const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
+      if (!cp.hit && aabb(pr, cp)){
+        cp.hit = true;
+        player.respawnX = cp.x - 40;
+        player.respawnY = Math.max(120, cp.y - 140);
+        player.score += 200;
+        SFX.chk();
+        spawnParticles(cp.x, cp.y, 18, 240, 0.4);
+      }
+    }
+
+    // spikes
+    for (const s of level.spikes){
+      const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
+      if (aabb(pr, s)) { hurt(true); break; }
+    }
+
+    // jump pads
+    for (const jp of (level.jumpPads || [])){
+      jp.bounceT = Math.max(0, jp.bounceT - dt);
+      const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
+
+      if (player.vy >= 0 && aabb(pr, jp)) {
+        const playerBottom = player.y + player.h;
+        const padTop = jp.y;
+        if ((playerBottom - padTop) < 18) {
+          player.y = jp.y - player.h;
+          player.vy = -jp.power * (player.big ? 1.05 : 1.0);
+          player.onGround = false;
+          player.coyote = 0;
+          player.jumpBuffer = 0;
+          jp.bounceT = 0.12;
+          player.score += 25;
+          SFX.pad();
+          spawnParticles(jp.x + jp.w/2, jp.y, 18, 320, 0.35);
+          doShake(7, 0.10);
+        }
+      }
+    }
+
+    // keys
+    for (const k of (level.keys || [])){
+      if (k.taken) continue;
+      k.bob += dt;
+      const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
+      const rr = {x:k.x, y:k.y + Math.sin(k.bob*5)*4, w:k.w, h:k.h};
+      if (aabb(pr, rr)){
+        k.taken = true;
+        player.keys.add(k.id);
+        player.score += 250;
+        SFX.key();
+        spawnParticles(k.x + k.w/2, k.y + k.h/2, 16, 260, 0.35);
+      }
+    }
+
+    // doors (open if you have the key)
+    for (const d of (level.doors || [])){
+      if (d.open) continue;
+      if (player.keys.has(d.id)) {
+        const near = Math.abs((player.x + player.w/2) - (d.x + d.w/2)) < 60 &&
+                     Math.abs((player.y + player.h/2) - (d.y + d.h/2)) < 80;
+        if (near) {
+          d.open = true;
+          player.score += 150;
+          SFX.door();
+          spawnParticles(d.x + d.w/2, d.y + d.h/2, 20, 280, 0.45);
+          doShake(10, 0.14);
+        }
+      }
+    }
+
+    // enemies
     for (const e of level.enemies){
       if (!e.alive) { e.stompedT += dt; continue; }
+
       e.x += e.vx * dt;
       if (e.x < e.minX) { e.x = e.minX; e.vx = Math.abs(e.vx); }
       if (e.x > e.maxX) { e.x = e.maxX; e.vx = -Math.abs(e.vx); }
 
-      // collide with platforms vertically (simple: keep them on ground)
-      e.y += gravity * dt * 0.2;
-      for (const pl of level.platforms){
-        if (aabb(e, pl)) {
-          // push out from top only for simplicity
-          e.y = pl.y - e.h;
-        }
+      const prevY = e.y;
+      e.y += gravity * dt * 0.18;
+      for (const pl of allSolids()){
+        if (!aabb(e, pl)) continue;
+        const wasAbove = (prevY + e.h) <= pl.y;
+        if (wasAbove) e.y = pl.y - e.h;
       }
 
       const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
       if (!aabb(pr, e)) continue;
 
-      // stomp check: player falling and near top
       const playerBottom = player.y + player.h;
       const enemyTop = e.y;
       const falling = player.vy > 120;
@@ -426,93 +1516,122 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
         e.alive = false;
         player.vy = -420;
         player.score += 300;
+        SFX.stomp();
+        spawnParticles(e.x + e.w/2, e.y + e.h/2, 18, 320, 0.35);
+        doShake(8, 0.12);
       } else {
         hurt(false);
       }
     }
 
-    // invuln timer
-    player.invuln = Math.max(0, player.invuln - dt);
+    // boss
+    if (level.boss && level.boss.alive){
+      const b = level.boss;
+      b.t += dt;
+      b.hurtT = Math.max(0, b.hurtT - dt);
 
-    // goal
-    if (aabb(player, level.goal)) win();
+      b.x += b.vx * dt;
+      if (b.x < b.minX) { b.x = b.minX; b.vx = Math.abs(b.vx); }
+      if (b.x > b.maxX) { b.x = b.maxX; b.vx = -Math.abs(b.vx); }
+
+      b.shootCd -= dt;
+      if (b.shootCd <= 0){
+        b.shootCd = hardMode ? 0.9 : 1.2;
+        const dir = (player.x < b.x) ? -1 : 1;
+        spawnProjectile(b.x + b.w/2, b.y + 18, 260*dir, 0);
+        spawnProjectile(b.x + b.w/2, b.y + 18, 220*dir, 140);
+        SFX.bossShoot();
+      }
+
+      const pr = {x:player.x, y:player.y, w:player.w, h:player.h};
+      if (aabb(pr, b)){
+        const playerBottom = player.y + player.h;
+        const bossTop = b.y;
+        const falling = player.vy > 120;
+        const stomp = falling && (playerBottom - bossTop) < 20;
+
+        if (stomp && b.hurtT <= 0) {
+          b.hp -= 1;
+          b.hurtT = 0.7;
+          player.vy = -520;
+          player.score += 900;
+          SFX.bossHit();
+          doShake(14, 0.18);
+          spawnParticles(b.x + b.w/2, b.y + b.h/2, 30, 380, 0.45);
+
+          if (b.hp <= 0) {
+            b.alive = false;
+            player.score += 1200;
+            doShake(18, 0.22);
+            spawnParticles(b.x + b.w/2, b.y + b.h/2, 60, 460, 0.7);
+            SFX.win();
+            player.keys.add("Z");
+          }
+        } else {
+          hurt(true);
+        }
+      }
+    }
+
+    // boss projectiles
+    for (let i=projectiles.length-1;i>=0;i--){
+      const p = projectiles[i];
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 200 * dt;
+
+      let hitSolid = false;
+      for (const s of allSolids()){
+        if (aabb(p, s)) { hitSolid = true; break; }
+      }
+      if (hitSolid || p.life <= 0) {
+        spawnParticles(p.x, p.y, 10, 240, 0.25);
+        projectiles.splice(i,1);
+        continue;
+      }
+      if (aabb(p, player)) {
+        projectiles.splice(i,1);
+        hurt(true);
+      }
+    }
+
+    // GOAL: require boss dead if present, then win on goalZone (fallback to goal)
+    const canFinish = !level.boss || !level.boss.alive;
+    const zone = level.goalZone || level.goal;
+    if (canFinish && aabb(player, zone)) winLevel();
+
+    // particles update
+    for (let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.t += dt;
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= Math.pow(0.2, dt);
+      p.vy += 700 * dt;
+      if (p.life <= 0) particles.splice(i,1);
+    }
+
+    shakeT = Math.max(0, shakeT - dt);
+    if (shakeT <= 0) shakeMag = 0;
 
     syncHud();
     updateCamera(dt);
   }
 
-  function resolvePlayerCollisions(axis){
-    for (const pl of level.platforms){
-      if (!aabb(player, pl)) continue;
-      if (axis === "x") {
-        if (player.vx > 0) player.x = pl.x - player.w;
-        else if (player.vx < 0) player.x = pl.x + pl.w;
-        player.vx = 0;
-      } else {
-        if (player.vy > 0) {
-          player.y = pl.y - player.h;
-          player.vy = 0;
-          player.onGround = true;
-        } else if (player.vy < 0) {
-          player.y = pl.y + pl.h;
-          player.vy = 0;
-        }
-      }
-    }
-  }
-
-  function hurt(instantDeath){
-    if (player.invuln > 0) return;
-    if (instantDeath) {
-      player.lives -= 1;
-    } else {
-      if (player.big) {
-        // shrink instead of losing a life
-        player.big = false;
-        player.score = Math.max(0, player.score - 150);
-        const oldH = player.h;
-        player.h = 34;
-        player.y += (oldH - player.h); // keep feet roughly aligned
-        player.invuln = 1.2;
-        player.vx = -Math.sign(player.vx || 1) * 260;
-        player.vy = -420;
-        return;
-      } else {
-        player.lives -= 1;
-      }
-    }
-
-    if (player.lives <= 0) return gameOver();
-
-    // respawn
-    player.invuln = 1.2;
-    player.x = Math.max(40, view.x + 80);
-    player.y = 120;
-    player.vx = 0; player.vy = 0;
-  }
-
-  function updateCamera(dt){
-    // target: keep player around 40% from left
-    const targetX = player.x - view.w * 0.40;
-    const minX = 0;
-    const maxX = Math.max(0, level.width - view.w);
-    view.x += (targetX - view.x) * Math.min(1, dt*6);
-    view.x = Math.max(minX, Math.min(maxX, view.x));
-    view.y = 0;
-  }
-
   // ---------- Rendering ----------
   function draw(){
-    // sky gradient
+    if (!level) return;
+
     const w = view.w, h = view.h;
     ctx.clearRect(0,0,w,h);
 
-    // background
     ctx.fillStyle = "#0b1020";
     ctx.fillRect(0,0,w,h);
-    // distant "stars"
+
     ctx.globalAlpha = 0.35;
-    for (let i=0;i<60;i++){
+    for (let i=0;i<70;i++){
       const sx = (i*193) % w;
       const sy = (i*97) % h;
       ctx.fillStyle = "white";
@@ -520,7 +1639,6 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
     }
     ctx.globalAlpha = 1;
 
-    // parallax hills
     const px = - (view.x * 0.25) % 600;
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = "#13224a";
@@ -531,38 +1649,92 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
     }
     ctx.globalAlpha = 1;
 
-    // camera transform
-    ctx.save();
-    ctx.translate(-view.x, -view.y);
+    let sx = 0, sy = 0;
+    if (shakeT > 0) {
+      sx = (Math.random()*2-1) * shakeMag;
+      sy = (Math.random()*2-1) * shakeMag;
+    }
 
-    // platforms
-    for (const pl of level.platforms){
-      // top surface
-      ctx.fillStyle = "#1e2c57";
-      ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
-      ctx.fillStyle = "#2d4aa0";
-      ctx.fillRect(pl.x, pl.y, pl.w, 6);
-      // subtle tiles
-      ctx.globalAlpha = 0.12;
-      ctx.fillStyle = "white";
-      for (let x=pl.x; x<pl.x+pl.w; x+=tile){
-        ctx.fillRect(x, pl.y, 1, pl.h);
-      }
+    ctx.save();
+    ctx.translate(-view.x + sx, -view.y + sy);
+
+    for (const pl of level.platforms) drawPlatform(pl.x, pl.y, pl.w, pl.h, false);
+    for (const m of level.movers)     drawPlatform(m.x, m.y, m.w, m.h, true);
+
+    for (const d of (level.doors||[])){
+      if (d.open) continue;
+      ctx.fillStyle = "#6ee7ff";
+      roundRect(d.x, d.y, d.w, d.h, 10, true);
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = "black";
+      ctx.fillRect(d.x + 10, d.y + 18, d.w - 20, 10);
+      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = "#0b1020";
+      ctx.font = "bold 16px ui-sans-serif, system-ui";
+      ctx.fillText(d.id, d.x + d.w/2 - 5, d.y + 26);
       ctx.globalAlpha = 1;
     }
 
-    // goal
+    for (const jp of (level.jumpPads || [])){
+      const squish = jp.bounceT > 0 ? (1 - jp.bounceT * 2) : 1;
+      const hh = jp.h * (0.75 + 0.25 * Math.max(0.2, squish));
+
+      ctx.fillStyle = "#9cff6e";
+      roundRect(jp.x, jp.y + (jp.h - hh), jp.w, hh, 8, true);
+
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = "white";
+      ctx.fillRect(jp.x + 6, jp.y + 2, jp.w - 12, 3);
+      ctx.globalAlpha = 1;
+    }
+
+    for (const s of level.spikes) drawSpikes(s);
+
+    for (const cp of level.checkpoints){
+      ctx.fillStyle = cp.hit ? "#9cff6e" : "rgba(255,255,255,.25)";
+      roundRect(cp.x, cp.y, cp.w, cp.h, 8, true);
+      ctx.fillStyle = cp.hit ? "#6ee7ff" : "#ffd86e";
+      ctx.fillRect(cp.x + 10, cp.y + 6, 26, 10);
+    }
+
+    // goal (visual marker)
     ctx.fillStyle = "#6ee7ff";
     ctx.fillRect(level.goal.x, level.goal.y, level.goal.w, level.goal.h);
     ctx.fillStyle = "rgba(0,0,0,.25)";
     ctx.fillRect(level.goal.x, level.goal.y + 10, level.goal.w, 6);
 
-    // coins
+    // NEW: finish wall (full height so you can't jump over it)
+    if (level.finishWall){
+      ctx.fillStyle = "#6ee7ff";
+      ctx.fillRect(level.finishWall.x, level.finishWall.y, level.finishWall.w, level.finishWall.h);
+      ctx.globalAlpha = 0.20;
+      ctx.fillStyle = "white";
+      ctx.fillRect(level.finishWall.x, level.finishWall.y, 2, level.finishWall.h);
+      ctx.globalAlpha = 1;
+    }
+
+    for (const k of (level.keys || [])){
+      if (k.taken) continue;
+      const bobY = k.y + Math.sin(k.bob*5)*4;
+      ctx.fillStyle = "#ffd86e";
+      roundRect(k.x, bobY, k.w, k.h, 6, true);
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = "#0b1020";
+      ctx.font = "bold 14px ui-sans-serif, system-ui";
+      ctx.fillText(k.id, k.x + 7, bobY + 16);
+      ctx.globalAlpha = 1;
+    }
+
     for (const c of level.coins){
       if (c.taken) continue;
+      const dist = Math.abs((player.x+player.w/2) - c.x) + Math.abs((player.y+player.h/2) - c.y);
+      const visible = !c.hidden || dist < 180;
+      if (!visible) continue;
+
       ctx.beginPath();
       ctx.arc(c.x, c.y, c.r, 0, Math.PI*2);
-      ctx.fillStyle = "#ffd86e";
+      ctx.fillStyle = c.hidden ? "rgba(255,216,110,.6)" : "#ffd86e";
       ctx.fill();
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = "white";
@@ -570,49 +1742,146 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
       ctx.globalAlpha = 1;
     }
 
-    // powerups
     for (const p of level.powerups){
       if (p.taken) continue;
       const bobY = p.y + Math.sin(p.bob*5)*4;
-      ctx.fillStyle = "#9cff6e";
-      roundRect(p.x, bobY, p.w, p.h, 8, true);
-      ctx.fillStyle = "rgba(0,0,0,.25)";
-      ctx.fillRect(p.x+6, bobY+8, p.w-12, 6);
+
+      if (p.kind === "grow") {
+        ctx.fillStyle = "#9cff6e";
+        roundRect(p.x, bobY, p.w, p.h, 8, true);
+        ctx.fillStyle = "rgba(0,0,0,.25)";
+        ctx.fillRect(p.x+6, bobY+8, p.w-12, 6);
+      } else if (p.kind === "feather") {
+        ctx.fillStyle = "#c8d2ff";
+        roundRect(p.x, bobY, p.w, p.h, 8, true);
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = "white";
+        ctx.fillRect(p.x+6, bobY+6, p.w-12, 4);
+        ctx.globalAlpha = 1;
+      } else if (p.kind === "shield") {
+        ctx.fillStyle = "#6ee7ff";
+        roundRect(p.x, bobY, p.w, p.h, 10, true);
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = "white";
+        ctx.fillRect(p.x+6, bobY+6, p.w-12, 4);
+        ctx.globalAlpha = 1;
+      }
     }
 
-    // enemies
     for (const e of level.enemies){
       if (!e.alive && e.stompedT > 0.5) continue;
       ctx.globalAlpha = e.alive ? 1 : Math.max(0, 1 - e.stompedT*2);
       ctx.fillStyle = "#ff6e8a";
       roundRect(e.x, e.y, e.w, e.h, 10, true);
-      // eyes
       ctx.fillStyle = "rgba(0,0,0,.35)";
       ctx.fillRect(e.x+8, e.y+10, 6, 6);
       ctx.fillRect(e.x+18, e.y+10, 6, 6);
       ctx.globalAlpha = 1;
     }
 
-    // player
+    if (level.boss){
+      const b = level.boss;
+      if (b.alive){
+        ctx.globalAlpha = b.hurtT > 0 ? 0.5 : 1;
+        ctx.fillStyle = "#ff6e8a";
+        roundRect(b.x, b.y, b.w, b.h, 14, true);
+        ctx.globalAlpha = 1;
+        ctx.globalAlpha = 0.9;
+        for (let i=0;i<b.hp;i++){
+          ctx.fillStyle = "#ffd86e";
+          ctx.fillRect(b.x + 10 + i*18, b.y - 10, 14, 6);
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = "#ff6e8a";
+        blob(b.x + b.w/2, b.y + b.h/2 + 18, 70, 22);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    for (const p of projectiles){
+      ctx.fillStyle = "#ffd86e";
+      roundRect(p.x, p.y, p.w, p.h, 4, true);
+    }
+
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = "white";
+    for (const p of particles){
+      const a = Math.max(0, Math.min(1, p.life / 0.35));
+      ctx.globalAlpha = 0.7 * a;
+      ctx.fillRect(p.x, p.y, 3, 3);
+    }
+    ctx.globalAlpha = 1;
+
     const blink = player.invuln > 0 && Math.floor(performance.now()/80)%2===0;
     if (!blink) {
+      const dashGlow = player.dashing > 0 ? 0.35 : 0;
+      if (dashGlow) {
+        ctx.globalAlpha = dashGlow;
+        ctx.fillStyle = "#6ee7ff";
+        roundRect(player.x-6, player.y+6, player.w+12, player.h-12, 14, true);
+        ctx.globalAlpha = 1;
+      }
+
+      if (player.shield > 0) {
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = "#6ee7ff";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(player.x + player.w/2, player.y + player.h/2, player.w*0.95, player.h*0.7, 0, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
       ctx.fillStyle = player.big ? "#6ee7ff" : "#c8d2ff";
       roundRect(player.x, player.y, player.w, player.h, 10, true);
-      // visor
       ctx.globalAlpha = 0.25;
       ctx.fillStyle = "black";
       ctx.fillRect(player.x+6, player.y+10, player.w-12, 8);
       ctx.globalAlpha = 1;
+
+      if (player.wallSlide){
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = "#ffd86e";
+        ctx.fillRect(player.x + (player.facing<0? -2 : player.w), player.y + player.h*0.65, 3, 3);
+        ctx.globalAlpha = 1;
+      }
     }
 
     ctx.restore();
 
-    // foreground vignette
     ctx.globalAlpha = 0.12;
     ctx.fillStyle = "black";
     ctx.fillRect(0,0,w,16);
     ctx.fillRect(0,h-16,w,16);
     ctx.globalAlpha = 1;
+  }
+
+  function drawPlatform(x,y,w,h,isMover){
+    ctx.fillStyle = isMover ? "#22406e" : "#1e2c57";
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = isMover ? "#3e6bd0" : "#2d4aa0";
+    ctx.fillRect(x, y, w, 6);
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = "white";
+    for (let xx=x; xx<x+w; xx+=tile) ctx.fillRect(xx, y, 1, h);
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSpikes(s){
+    ctx.fillStyle = "#ff6e8a";
+    const count = Math.max(2, Math.floor(s.w / 18));
+    const step = s.w / count;
+    for (let i=0;i<count;i++){
+      const x = s.x + i*step;
+      ctx.beginPath();
+      ctx.moveTo(x, s.y + s.h);
+      ctx.lineTo(x + step*0.5, s.y);
+      ctx.lineTo(x + step, s.y + s.h);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 
   function blob(x,y,w,h){
@@ -640,9 +1909,27 @@ window.addEventListener("orientationchange", () => setTimeout(resize, 250));
     requestAnimationFrame(loop);
   }
 
-  // start
+  // ---------- Store helpers ----------
+  function loadStore(){
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      const obj = raw ? JSON.parse(raw) : {};
+      if (obj.unlocked == null) obj.unlocked = 1;
+      if (obj.lastLevel == null) obj.lastLevel = 0;
+      return obj;
+    } catch {
+      return { unlocked:1, lastLevel:0, soundOn:true, hardMode:false, upgrades:{dashCdMul:1, extraLivesBought:0} };
+    }
+  }
+  function saveStore(obj){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(obj)); } catch {}
+  }
+
+  // ---------- Start ----------
   resize();
-  restart();
+  loadLevel(0, false);
+  paused = true;
+  showStart();
   requestAnimationFrame(loop);
 })();
 </script>
